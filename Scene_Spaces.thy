@@ -1178,9 +1178,27 @@ next
   assume a:"(\<forall>x. x \<in> A \<and> x \<in> scene_space \<longrightarrow> y \<subseteq>\<^sub>S x) \<and> y \<in> scene_space"
   have "y \<le> \<Inter>\<^sub>S A \<longleftrightarrow> \<Union>\<^sub>S (uminus ` A) \<le> - y"
     by (metis Inf_scene_def scene_indep_sym scene_le_iff_indep_inv uminus_scene_twice)
-  also from assms a have "..."
-    using scene_space_uminus scene_compl_subset_iff
-    by (force intro!: Sup_scene_le)
+  also have "..."
+  proof (rule Sup_scene_le)
+    show "uminus ` A \<subseteq> scene_space"
+      using assms by (auto simp add: scene_space_uminus)
+  next
+    show "- y \<in> scene_space"
+      using a by (simp add: scene_space_uminus)
+  next
+    fix z
+    assume "z \<in> uminus ` A"
+    then obtain x where xA: "x \<in> A" and z: "z = - x"
+      by auto
+    then have x_space: "x \<in> scene_space"
+      using assms by auto
+    have y_space: "y \<in> scene_space"
+      using a by auto
+    have "y \<subseteq>\<^sub>S x"
+      using a xA x_space by auto
+    then show "z \<subseteq>\<^sub>S - y"
+      using scene_compl_subset_iff[OF x_space y_space] z by simp
+  qed
   finally show "y \<subseteq>\<^sub>S \<Inter>\<^sub>S A"
     by blast
 next 

@@ -109,7 +109,7 @@ fun mk_alpha_scene_space tname thy =
   val (_, ctx1) = Local_Theory.begin_nested ctx0
 
   val def_ty = Syntax.read_typ ctx0 ("'a " ^ r_ext ^ " scene list");                                                                                                                                                     
-  val (_, ctx2) = Specification.definition (SOME (Binding.name ("Vars_" ^ tname ^ "_ext"), NONE, NoSyn)) [] [] ((Binding.empty, @{attributes [scene_space_defs]}), mk_def def_ty ("Vars_" ^ tname ^ "_ext") (alpha_scene_space_term xs more parent)) ctx1
+  val (_, ctx2) = Specification.definition {verbose = true} (SOME (Binding.name ("Vars_" ^ tname ^ "_ext"), NONE, NoSyn)) [] [] ((Binding.empty, @{attributes [scene_space_defs]}), mk_def def_ty ("Vars_" ^ tname ^ "_ext") (alpha_scene_space_term xs more parent)) ctx1
 
   val ctx3 = Local_Theory.end_nested ctx2
 
