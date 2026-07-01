@@ -176,8 +176,16 @@ next
     case False
     with Cons(2-3) have 1: "set ys \<subseteq> set xs"
       by auto
+    have filter_subset: "set (filter (\<lambda>x. x \<notin> set ys) xs) \<subseteq> set xs"
+      by auto
+    have pairwise_filter: "pairwise (##\<^sub>S) (set (filter (\<lambda>x. x \<notin> set ys) xs))"
+      using Cons.prems(1) filter_subset
+      by (meson pairwise_subset set_subset_Cons subset_trans)
+    have x_compat_filter: "\<forall>y \<in> set (filter (\<lambda>x. x \<notin> set ys) xs). x ##\<^sub>S y"
+      using Cons.prems(1)
+      by (auto intro: scene_compats_members)
     have 2: "x ##\<^sub>S \<Squnion>\<^sub>S (filter (\<lambda>x. x \<notin> set ys) xs)"
-      by (metis (no_types, lifting) Cons.prems(1) filter_is_subset filter_set list.simps(15) member_filter pairwise_compat_foldr pairwise_insert pairwise_subset scene_compat_refl)
+      by (rule pairwise_compat_foldr[OF pairwise_filter x_compat_filter])
     have 3: "x ##\<^sub>S \<Squnion>\<^sub>S ys"
       by (meson Cons.prems(1) Cons.prems(2) list.set_intros(1) pairwise_compat_foldr pairwise_subset scene_compats_members subset_code(1))
     from Cons(1)[of ys] Cons(2-3) have 4: "\<Squnion>\<^sub>S (filter (\<lambda>x. x \<notin> set ys) xs) ##\<^sub>S \<Squnion>\<^sub>S ys"
@@ -1178,9 +1186,27 @@ next
   assume a:"(\<forall>x. x \<in> A \<and> x \<in> scene_space \<longrightarrow> y \<subseteq>\<^sub>S x) \<and> y \<in> scene_space"
   have "y \<le> \<Inter>\<^sub>S A \<longleftrightarrow> \<Union>\<^sub>S (uminus ` A) \<le> - y"
     by (metis Inf_scene_def scene_indep_sym scene_le_iff_indep_inv uminus_scene_twice)
-  also from assms a have "..."
-    using scene_space_uminus scene_compl_subset_iff
-    by (force intro!: Sup_scene_le)
+  also have "..."
+  proof (rule Sup_scene_le)
+    show "uminus ` A \<subseteq> scene_space"
+      using assms by (auto simp add: scene_space_uminus)
+  next
+    show "- y \<in> scene_space"
+      using a by (simp add: scene_space_uminus)
+  next
+    fix z
+    assume "z \<in> uminus ` A"
+    then obtain x where xA: "x \<in> A" and z: "z = - x"
+      by auto
+    then have x_space: "x \<in> scene_space"
+      using assms by auto
+    have y_space: "y \<in> scene_space"
+      using a by auto
+    have "y \<subseteq>\<^sub>S x"
+      using a xA x_space by auto
+    then show "z \<subseteq>\<^sub>S - y"
+      using scene_compl_subset_iff[OF x_space y_space] z by simp
+  qed
   finally show "y \<subseteq>\<^sub>S \<Inter>\<^sub>S A"
     by blast
 next 

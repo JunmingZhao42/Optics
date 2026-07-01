@@ -25,7 +25,7 @@ fun wb_prism_proof x thms ctx =
       (fn {context = context, prems = _}
                            => EVERY [ PARALLEL_ALLGOALS (full_simp_tac (fold add_simp thms context))
                                     , Classical.rule_tac context [@{thm wb_ctor_prism_intro}] [] 1
-                                    , auto_tac (context delsimprocs [@{simproc unit_eq}])
+                                    , auto_tac (context |> del_proc @{simproc unit_eq})
                                     ])
   end
 
@@ -50,7 +50,7 @@ val un_prefix = "un_";
 
 fun def typ qual (x, tm) ctx = 
   let open Specification; open Syntax
-      val ((_, (_, thm)), d) = definition (SOME (Binding.qualify false qual (Binding.name x), SOME typ, NoSyn)) [] [] ((Binding.empty, @{attributes [lens_defs, chan_defs]}), mk_def typ x tm) ctx
+      val ((_, (_, thm)), d) = definition {verbose = true} (SOME (Binding.qualify false qual (Binding.name x), SOME typ, NoSyn)) [] [] ((Binding.empty, @{attributes [lens_defs, chan_defs]}), mk_def typ x tm) ctx
   in (thm, d)  
   end
 
@@ -83,7 +83,7 @@ fun chantyperep_def name raw_chans ct vmap ctx =
   val lhs = ct $ Free ("T", Term.itselfT ty);
   val rhs = mk_chantyperep chans ctx;
   val eq = check_term ctx (HOLogic.mk_Trueprop (HOLogic.mk_eq (lhs, rhs)));
-  in snd (Specification.definition NONE [] [] ((Binding.empty, @{attributes [chantyperep_defs]}), eq) ctx)
+  in snd (Specification.definition {verbose = true} NONE [] [] ((Binding.empty, @{attributes [chantyperep_defs]}), eq) ctx)
   end;
 
 fun chantyperep_instance raw_vars vars sorts name raw_chans thy =
@@ -133,19 +133,19 @@ fun make_chantype tvars sorts name chans thy =
   (* The datatype package does not produce a discriminator for the second constructor when
      there are two constructors. We here generate one for uniformity. *)
     (if (length pnames = 2)
-      then abbreviation 
-             Syntax.mode_default (SOME (Binding.qualify false name (Binding.name (is_prefix ^ nth pnames 1 ^ ctor_suffix)), NONE, NoSyn)) [] 
-             (mk_def dummyT 
-                (is_prefix ^ nth pnames 1 ^ ctor_suffix) 
-                (const @{const_name comp} $ @{term Not} $ const (prefix ^ is_prefix ^ nth pnames 0 ^ ctor_suffix))) false
+      then abbreviation {verbose = false}
+             Syntax.mode_default (SOME (Binding.qualify false name (Binding.name (is_prefix ^ nth pnames 1 ^ ctor_suffix)), NONE, NoSyn)) []
+             (mk_def dummyT
+                (is_prefix ^ nth pnames 1 ^ ctor_suffix)
+                (const @{const_name comp} $ @{term Not} $ const (prefix ^ is_prefix ^ nth pnames 0 ^ ctor_suffix)))
       else I)
   (* The datatype also does not produce a discriminator when the length is 1 *)
   #> (if (length pnames = 1)
-      then abbreviation
-             Syntax.mode_default (SOME (Binding.qualify false name (Binding.name (is_prefix ^ nth pnames 0 ^ ctor_suffix)), NONE, NoSyn)) [] 
-             (mk_def dummyT 
-                (is_prefix ^ nth pnames 0 ^ ctor_suffix) 
-                (Abs ("x", typ, @{term "True"}))) false
+      then abbreviation {verbose = false}
+             Syntax.mode_default (SOME (Binding.qualify false name (Binding.name (is_prefix ^ nth pnames 0 ^ ctor_suffix)), NONE, NoSyn)) []
+             (mk_def dummyT
+                (is_prefix ^ nth pnames 0 ^ ctor_suffix)
+                (Abs ("x", typ, @{term "True"})))
       else I)
   #> defs ptyp name pnames (fn x => (const @{const_name ctor_prism}
                          $ const (prefix ^ x ^ ctor_suffix)
