@@ -51,8 +51,9 @@ is "\<lambda> F. {(s\<^sub>1, s\<^sub>2). (\<forall> s. F s\<^sub>1 s = F s\<^su
 lemma equiv_region: "equiv UNIV (region X)"
   apply (transfer)
   apply (rule equivI)
-    apply (rule refl_onI)
      apply (auto)
+    apply (rule refl_onI)
+    apply (auto)
    apply (rule symI)
    apply (auto)
   apply (rule transI)
@@ -62,8 +63,9 @@ lemma equiv_region: "equiv UNIV (region X)"
 lemma equiv_coregion: "equiv UNIV (coregion X)"
   apply (transfer)
   apply (rule equivI)
-    apply (rule refl_onI)
      apply (auto)
+    apply (rule refl_onI)
+    apply (auto)
    apply (rule symI)
    apply (auto)
   apply (rule transI)
