@@ -326,9 +326,9 @@ fun add_alphabet (params, binding) raw_parent ty_fields thy =
  in thy     (* Add a new record for the new alphabet lenses *)
          |> add_record_cmd {overloaded = false} (params, binding) raw_parent fields
             (* Add the record definition theorems to alpha_defs *)
-         |> Named_Target.theory_map (snd o Specification.theorems_cmd {verbose = false, kind = ""} [((Binding.empty, []), [(Facts.named (tname ^ defs_suffix), snd alpha_defs)])] [])
+         |> Named_Target.theory_map (snd o Specification.theorems_cmd "" [((Binding.empty, []), [(Facts.named (tname ^ defs_suffix), snd alpha_defs)])] [] false)
             (* Add the record splitting theorems to the alpha_splits set for proof automation *)
-         |> Named_Target.theory_map (snd o Specification.theorems_cmd {verbose = false, kind = ""} [((Binding.empty, []), [(Facts.named (tname ^ splits_suffix), alpha_splits)])] [])
+         |> Named_Target.theory_map (snd o Specification.theorems_cmd "" [((Binding.empty, []), [(Facts.named (tname ^ splits_suffix), alpha_splits)])] [] false)
             (* Reorder parent splitting theorems, so the child ones have higher priority *)
          |> (fn thy => 
              let 
@@ -342,10 +342,10 @@ fun add_alphabet (params, binding) raw_parent ty_fields thy =
             (* Add definitions for each of the lenses corresponding to each record field in-situ *)
          |> Sign.qualified_path false binding
          |> Named_Target.theory_map
-              (fold (fn (n, d) => snd o Specification.definition_cmd {verbose = true} (SOME (Binding.make (n, Position.none), NONE, NoSyn)) [] [] (alpha_defs, d)) (map ldef lnames @ [bldef, mldef]))
+              (fold (fn (n, d) => snd o Specification.definition_cmd (SOME (Binding.make (n, Position.none), NONE, NoSyn)) [] [] (alpha_defs, d) true) (map ldef lnames @ [bldef, mldef]))
             (* Add definition of the underlying symmetric lens *)
          |> Named_Target.theory_map
-              (fold (fn (n, d) => Specification.abbreviation_cmd {verbose = true} Syntax.mode_default (SOME (Binding.make (n, Position.none), NONE, NoSyn)) [] d) [sldef])
+              (fold (fn (n, d) => Specification.abbreviation_cmd Syntax.mode_default (SOME (Binding.make (n, Position.none), NONE, NoSyn)) [] d true) [sldef])
             (* Add a vwb lens proof for each field lens *)
          |> fold (fn x => fn thy => snd (add_thm ((Binding.make (x ^ vwb_lens_suffix, Position.none), lens_proof tname x thy), attrs) thy)) (lnames @ [base_lensN, child_lensN])
             (* Add a bij lens proof for the base and more lenses *)                                                              
