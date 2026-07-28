@@ -9,9 +9,9 @@ structure Channel_Type : CHANNEL_TYPE =
 struct
 
 fun 
-  add_typerep_tfrees (Type (n, ts)) = Type (n, map add_typerep_tfrees ts) |
-  add_typerep_tfrees (TFree (n, sorts)) = TFree (n, sorts @ @{sort typerep}) |
-  add_typerep_tfrees (TVar (n, sorts)) = TVar (n, sorts @ @{sort typerep})
+  add_typerep_tfrees thy (Type (n, ts)) = Type (n, map (add_typerep_tfrees thy) ts) |
+  add_typerep_tfrees thy (TFree (n, sorts)) = TFree (n, Sign.inter_sort thy (sorts, @{sort typerep})) |
+  add_typerep_tfrees _ (TVar (n, sorts)) = TVar (n, sorts @ @{sort typerep})
 
 val wb_prism_suffix = "_wb_prism"
 
@@ -111,7 +111,7 @@ fun make_chantype tvars sorts name chans thy =
     open BNF_FP_Def_Sugar; open BNF_FP_Rec_Sugar_Util; open BNF_LFP; open Ctr_Sugar
     open Prism_Lib; open Lens_Lib; open Local_Theory; open Specification; open Syntax; open HOLogic; open Global_Theory
     val ctx = Named_Target.theory_init thy;
-    val ctrs = map (fn (n, t) => (((Binding.empty, Binding.name (n ^ ctor_suffix)), [(Binding.empty, add_typerep_tfrees (read_typ ctx t))]), Mixfix.NoSyn)) chans 
+    val ctrs = map (fn (n, t) => (((Binding.empty, Binding.name (n ^ ctor_suffix)), [(Binding.empty, add_typerep_tfrees thy (read_typ ctx t))]), Mixfix.NoSyn)) chans 
 
     val pnames = map fst chans
     val thypfx = 
@@ -168,7 +168,7 @@ fun prism_has_chanrep n ctx =
 fun prism_has_chanrep_proof ctx (n, t) =
   let open Simplifier; open Prism_Lib; open Syntax; open HOLogic
       val d = read_term ctx ("is_" ^ n ^ "_C")
-      val ct = Syntax.check_term ctx ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (read_typ ctx t))) $ d)
+      val ct = Syntax.check_term ctx ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) (read_typ ctx t))) $ d)
   in
       Goal.prove ctx [] []
       (Syntax.check_term ctx (prism_has_chanrep n ctx))
@@ -178,7 +178,7 @@ fun prism_has_chanrep_proof ctx (n, t) =
 fun prism_chanrep n t ctx =
   let open Syntax; open HOLogic
       val c = read_term ctx n; val d = read_term ctx ("is_" ^ n ^ "_C") 
-      val ct = ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees t)) $ d) in
+      val ct = ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) t)) $ d) in
   Trueprop $ (eq_const dummyT $ (const @{const_name chanrep_of} $ c) $ ct)
   end
 
