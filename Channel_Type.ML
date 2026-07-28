@@ -11,7 +11,7 @@ struct
 fun 
   add_typerep_tfrees thy (Type (n, ts)) = Type (n, map (add_typerep_tfrees thy) ts) |
   add_typerep_tfrees thy (TFree (n, sorts)) = TFree (n, Sign.inter_sort thy (sorts, @{sort typerep})) |
-  add_typerep_tfrees _ (TVar (n, sorts)) = TVar (n, sorts @ @{sort typerep})
+  add_typerep_tfrees thy (TVar (n, sorts)) = TVar (n, Sign.inter_sort thy (sorts, @{sort typerep}))
 
 val wb_prism_suffix = "_wb_prism"
 
@@ -202,7 +202,7 @@ fun compile_chantype ((raw_tvars, name), raw_chans) thy =
   open Syntax; 
   val ctx = Named_Target.theory_init thy;
   val tvars = map (fn n => "'" ^ Char.toString (Char.chr n)) (97 upto (96 + length raw_tvars)); 
-  val sorts = map (fn t => case snd (snd t) of SOME s => read_sort ctx s @ @{sort typerep} | NONE => @{sort typerep}) raw_tvars
+  val sorts = map (fn t => case snd (snd t) of SOME s => Sign.inter_sort thy (read_sort ctx s, @{sort typerep}) | NONE => @{sort typerep}) raw_tvars
   in
   (make_chantype (map (fst o snd) raw_tvars) sorts name raw_chans #>
   (* Generate chantyperep instance *)
