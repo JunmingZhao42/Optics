@@ -8,6 +8,7 @@ sig
 
   val prismT: typ -> typ -> typ
   val isPrismT: typ -> bool
+  val dest_prismT: typ -> typ * typ
   val mk_wb_prism: term -> term           (* Make a well-behaved prism term *)
   val mk_codep: term -> term -> term      (* Make a codependence term *)
 
@@ -28,6 +29,9 @@ fun prismT a b = Type (@{type_name prism_ext}, [a, b, unitT])
 
 fun isPrismT (Type (n, _)) = (n = @{type_name prism_ext}) |
     isPrismT _ = false
+
+fun dest_prismT (Type (@{type_name prism_ext}, [a, b, _])) = (a, b) |
+    dest_prismT _ = raise Match
 
 fun mk_wb_prism t = mk_Trueprop (const wb_prismN $ t)
 

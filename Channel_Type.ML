@@ -166,20 +166,24 @@ fun prism_has_chanrep n ctx =
   Trueprop $ (const @{const_name has_chanrep} $ c)                         
   end
 
-fun prism_has_chanrep_proof ctx (n, t) =
+fun prism_has_chanrep_proof ctx (n, _) =
   let open Simplifier; open Prism_Lib; open Syntax; open HOLogic
-      val d = read_term ctx ("is_" ^ n ^ "_C")
-      val ct = Syntax.check_term ctx ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) (read_typ ctx t))) $ d)
+      val (viewT, srcT) = dest_prismT (dest_Const_type (read_term ctx n))  
+      val d = check_term ctx (Type.constraint (srcT --> dummyT) (parse_term ctx ("is_" ^ n ^ "_C")))
+      val ct = Syntax.check_term ctx ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) viewT)) $ d)
   in
       Goal.prove ctx [] []
       (Syntax.check_term ctx (prism_has_chanrep n ctx))
       (fn _ => NO_CONTEXT_TACTIC ctx (Method_Closure.apply_method ctx @{method prism_has_chanrep} [ct] [] [] ctx []))
   end
 
-fun prism_chanrep n t ctx =
-  let open Syntax; open HOLogic
-      val c = read_term ctx n; val d = read_term ctx ("is_" ^ n ^ "_C") 
-      val ct = ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) t)) $ d) in
+fun prism_chanrep n ctx =
+  let open Syntax; open Prism_Lib; open HOLogic
+      val c = read_term ctx n
+      val (viewT, srcT) = dest_prismT (dest_Const_type c)  
+      val d = check_term ctx (Type.constraint (srcT --> dummyT) (parse_term ctx ("is_" ^ n ^ "_C")))
+      val ct = Syntax.check_term ctx ((const @{const_name Chanrep} $ mk_literal n $ mk_typerep (add_typerep_tfrees (Proof_Context.theory_of ctx) viewT)) $ d)
+  in
   Trueprop $ (eq_const dummyT $ (const @{const_name chanrep_of} $ c) $ ct)
   end
 
@@ -187,7 +191,7 @@ fun prism_chanrep_proof ctx (n, t) =
   let open Simplifier; open Prism_Lib; open Syntax 
   in
       Goal.prove ctx [] []
-      (Syntax.check_term ctx (prism_chanrep n (read_typ ctx t) ctx))
+      (Syntax.check_term ctx (prism_chanrep n ctx))
       (fn _ => NO_CONTEXT_TACTIC ctx (Method_Closure.apply_method ctx @{method prism_chanrep} [] [] [] ctx []))
   end
 
@@ -202,14 +206,17 @@ fun compile_chantype ((raw_tvars, name), raw_chans) thy =
   let
   open Syntax; 
   val ctx = Named_Target.theory_init thy;
+  val raw_vars = map (fst o snd) raw_tvars
   val tvars = map (fn n => "'" ^ Char.toString (Char.chr n)) (97 upto (96 + length raw_tvars)); 
   val sorts = map (fn t => case snd (snd t) of SOME s => Sign.inter_sort thy (read_sort ctx s, @{sort typerep}) | NONE => @{sort typerep}) raw_tvars
+  (* Mapping from the given type variables to the ones needed for class instantiation *)
+  val vmap = ListPair.zip (raw_vars, tvars)
   in
   (make_chantype (map (fst o snd) raw_tvars) sorts name raw_chans #>
   (* Generate chantyperep instance *)
   chantyperep_instance (map (fst o snd) raw_tvars) tvars sorts name raw_chans #>
   (* Generate representations for each prism (channel) *)
-  prism_chanrep_proofs (name, raw_chans)) thy
+  prism_chanrep_proofs (name, raw_chans) ) thy
   end
 
 end;
