@@ -48,9 +48,19 @@ chantype chbig =
   a8 :: unit
   a9 :: nat
 
-chantype ('a, 'b) ty =
-  p1 :: "'a list"
-  p2 :: "nat"
-  p3 :: bool
+chantype ('s, 'b) ty2 =
+  p1 :: "'s list"
+  p2 :: "'b"
+
+chantype ('s, 't, 'v, 'e) RoboChart_Chan =
+  internal :: 't
+  enter :: "'s \<times> 's"
+  entered :: "'s \<times> 's"
+  exit :: "'s \<times> 's"
+  exited :: "'s \<times> 's"
+  terminate :: unit
+  get_var :: "'v" 
+  set_var :: "'v"
+  event :: "'e \<times> bool"
 
 end

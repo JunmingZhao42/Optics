@@ -74,16 +74,29 @@ fun mk_chantyperep chans ctx =
   mk_list dummyT (map mk_chanrep chans)
   end
 
-fun chantyperep_def name raw_chans ct vmap ctx = 
+fun chantyperep_def name raw_chans ct vmap ctx =  
   let  
-  open Syntax; open HOLogic; open Global_Theory; open Proof_Context
-  val ty = read_type_name {proper = true, strict = false} ctx name;
-  fun repl_tvars ty = map_type_tfree (fn (n, s) => TFree (the (AList.lookup (op =) vmap n), s)) ty
-  val chans = map (fn (n, t) => (n, mk_typerep (repl_tvars (read_typ ctx t)))) raw_chans
-  val lhs = ct $ Free ("T", Term.itselfT ty);
-  val rhs = mk_chantyperep chans ctx;
-  val eq = check_term ctx (HOLogic.mk_Trueprop (HOLogic.mk_eq (lhs, rhs)));
-  in snd (Specification.definition NONE [] [] ((Binding.empty, @{attributes [chantyperep_defs]}), eq) ctx)
+    open Syntax; open HOLogic; open Global_Theory; open Proof_Context
+    val thy = Proof_Context.theory_of ctx
+    val ty = read_type_name {proper = true, strict = false} ctx name;
+    
+    fun repl_tvars ty = map_type_tfree (fn (n, s) => TFree (the (AList.lookup (op =) vmap n), s)) ty
+    
+    (* Apply add_typerep_tfrees to intersect every TFree sort with @{sort typerep} *)
+    val chans = map (fn (n, t) => 
+      let 
+        val raw_T = read_typ ctx t
+        val replaced_T = repl_tvars raw_T
+        val typerep_T = add_typerep_tfrees thy replaced_T
+      in 
+        (n, mk_typerep typerep_T)
+      end) raw_chans
+
+    val lhs = ct $ Free ("T", Term.itselfT ty);
+    val rhs = mk_chantyperep chans ctx;
+    val eq = check_term ctx (HOLogic.mk_Trueprop (HOLogic.mk_eq (lhs, rhs)));
+  in 
+    snd (Specification.definition NONE [] [] ((Binding.empty, @{attributes [chantyperep_defs]}), eq) ctx)
   end;
 
 fun chantyperep_instance raw_vars vars sorts name raw_chans thy =
@@ -95,7 +108,7 @@ fun chantyperep_instance raw_vars vars sorts name raw_chans thy =
   val tyco = fst (dest_Type ty);
   val ctx0 = Class.instantiation ([tyco], tvars, \<^sort>\<open>chantyperep\<close>) thy;
   val ctx1 = snd (Local_Theory.begin_nested ctx0)
-  val ty' = Type (tyco, map (read_typ ctx1) vars) 
+  val ty' = Type (tyco, map (read_typ ctx1) vars)
   val ctx2 = chantyperep_def name raw_chans \<^Const>\<open>chantyperep ty'\<close> vmap ctx1
   val ctx3 = Local_Theory.end_nested ctx2;
   val disc_thms = if length raw_chans = 1 then [] else get_thms thy (tyco ^ ".discI")
@@ -187,7 +200,7 @@ fun prism_chanrep n ctx =
   Trueprop $ (eq_const dummyT $ (const @{const_name chanrep_of} $ c) $ ct)
   end
 
-fun prism_chanrep_proof ctx (n, t) =
+fun prism_chanrep_proof ctx (n, _) =
   let open Simplifier; open Prism_Lib; open Syntax 
   in
       Goal.prove ctx [] []
@@ -206,11 +219,9 @@ fun compile_chantype ((raw_tvars, name), raw_chans) thy =
   let
   open Syntax; 
   val ctx = Named_Target.theory_init thy;
-  val raw_vars = map (fst o snd) raw_tvars
   val tvars = map (fn n => "'" ^ Char.toString (Char.chr n)) (97 upto (96 + length raw_tvars)); 
   val sorts = map (fn t => case snd (snd t) of SOME s => Sign.inter_sort thy (read_sort ctx s, @{sort typerep}) | NONE => @{sort typerep}) raw_tvars
   (* Mapping from the given type variables to the ones needed for class instantiation *)
-  val vmap = ListPair.zip (raw_vars, tvars)
   in
   (make_chantype (map (fst o snd) raw_tvars) sorts name raw_chans #>
   (* Generate chantyperep instance *)
