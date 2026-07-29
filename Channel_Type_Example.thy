@@ -63,4 +63,6 @@ chantype ('s, 't, 'v, 'e) RoboChart_Chan =
   set_var :: "'v"
   event :: "'e \<times> bool"
 
+thm RoboChart_Chan.prism_chanreps
+
 end
