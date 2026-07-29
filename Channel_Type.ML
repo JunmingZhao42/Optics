@@ -102,8 +102,9 @@ fun chantyperep_instance raw_vars vars sorts name raw_chans thy =
   val exhaust_disc_thms = if length raw_chans = 1 then [] else get_thms thy (tyco ^ ".exhaust_disc")
   val ctx4 = fold (Context.proof_map o Named_Theorems.add_thm "Channel_Type.disc_thms") disc_thms ctx3;
   val ctx5 = fold (Context.proof_map o Named_Theorems.add_thm "Channel_Type.exhaust_disc_thms") exhaust_disc_thms ctx4;
-  in                                                                                                              
-  Class.prove_instantiation_exit (fn _ => NO_CONTEXT_TACTIC ctx5 (Method_Closure.apply_method ctx5 @{method chantyperep_inst} [] [] [] ctx5 [])) ctx5
+  in                       
+                                                                                       
+  Class.prove_instantiation_exit (fn ctxt => NO_CONTEXT_TACTIC ctxt (Method_Closure.apply_method ctxt @{method chantyperep_inst} [] [] [] ctxt [])) ctx5
   end;
 
 fun make_chantype tvars sorts name chans thy =
